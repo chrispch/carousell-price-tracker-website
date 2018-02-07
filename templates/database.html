@@ -3,61 +3,56 @@
 {%block content%}
 	<!-- Filter form -->
 	<div class="container">
-		<div class="row">
-			<div class="col-sm-12">
-				<form>
-					<div class="row">
-						<!-- Crawler -->
-						<div class="form-check form-check-inline">
-							<div class="col">Crawler</div>
-							<input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
-							<label class="form-check-label" for="defaultCheck1">
-								Needs to be dynamic
-							</label>
-							<input class="form-check-input" type="checkbox" value="" id="defaultCheck2">
-							<label class="form-check-label" for="defaultCheck2">
-								Needs to be dynamic
-							</label>
+			<form action="", method="post">
+		
+					<!-- Crawler Name -->
+				
+						<div class="form-group">
+							<label for="crawler-name">Name</label>
+							<input type="text" class="form-control" id="crawler-name" placeholder="Name of crawler" value="{{name}}" name="name">
+							
 						</div>
+				
+			
+					<div class="form-row">
+							<!-- Category -->
+							<div class="form-group col-md-6"
+							<label for="category">Category</label>
+								<select name="category" class="form-control" id="category" onchange="this.form.submit()">
+									{% for i in categories %}
+										{% if i == current_category %}
+											<option selected>{{i}}</option>			
+										{% else %}
+											<option>{{i}}</option>
+										{% endif %}
+									{% endfor %}
+								</select>
+							</div>
+						
+							<!-- Subcategory -->
+							<div class="form-group col-md-6"
+							<label for="subcategory">Subcategory</label>
+								<select name="subcategory" class="form-control" id="subcategory">
+									{% for i in subcategories %}
+										{% if i == current_subcategory %}
+											<option selected>{{i}}</option>			
+										{% else %}
+											<option>{{i}}</option>
+										{% endif %}
+									{% endfor %}
+								</select>
+							</div>
 					</div>
-					<div class="row">
-						<!-- Category -->
-						<div class="form-check form-check-inline">
-							<div class="col">Category</div>
-							<input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
-							<label class="form-check-label" for="defaultCheck1">
-								Needs to be dynamic
-							</label>
-							<input class="form-check-input" type="checkbox" value="" id="defaultCheck2">
-							<label class="form-check-label" for="defaultCheck2">
-								Needs to be dynamic
-							</label>
-						</div>
-					</div>
-					<div class="row">
-						<!-- Subcategory -->
-						<div class="form-check form-check-inline">
-							<div class="col">Subcategory</div>
-							<input class="form-check-input" type="checkbox" value="" id="defaultCheck2">
-							<label class="form-check-label" for="defaultCheck2">
-								Needs to be dynamic
-							</label>
-						</div>
-					</div>
-					<div class="row">
-						<!-- Search Term -->		
-						<div class="col-sm-1">
+					<!-- Search Term -->
+						<div class="form-group">
 							<label for="search-term">Search</label>
+							<input name="search" type="text" class="form-control" id="search-term" placeholder="Search term..." value={{search}}>
+							<small class="form-text text-muted">Crawl a specific search term</small>
 						</div>
-						<div class="col-sm-10">
-							<input type="text" class="form-control" id="search-term" placeholder="Search term...">
-						</div>
-						<div class="col-sm-1">
-							<button class="btn btn-primary" type="submit">Search</button>
-						</div>
-					</div>
-				</form>
-			</div>
+					
+
+				<button class="btn btn-primary" type="submit" formaction={{ url_for("preview") }}>Preview</button>
+				<button class="btn btn-primary" type="submit" formaction={{ url_for("add") }}>Add Crawler</button>
+			</form>
 		</div>
-	</div>
 {%endblock%}

@@ -1,34 +1,14 @@
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
 from flask_sqlalchemy import SQLAlchemy
+from database import categories, subcategories, add_crawler
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:hern3010@localhost/price-tracker"
-db = SQLAlchemy(app)
-
-categories = {"All": "https://carousell.com/",
-              "Electronics": "https://carousell.com/categories/electronics-7/",
-              "Mobiles & Tablets": "https://carousell.com/categories/mobile-phones-215/"}
-
-subcategories = {"All": {"All": ""},
-                 "Electronics": {"Computers": "computers-tablets-213/",
-                                 "TV & Entertainment Systems": "tvs-entertainment-systems-217/",
-                                 "Audio": "audio-207/",
-                                 "Computer Parts & Accessories": "computer-parts-accessories-214/",
-                                 "Others": "electronics-others-218/"},
-                 "Mobiles & Tablets": {"iPhones": "iphones-1235/",
-                                       "Android": "androidphones-1237/"}}
 
 preview_content = None
 
+active_crawlers = []
+inactive_crawlers = []
 
-class Data(db.Model):
-    __tablename__ = "data"
-    price = db.Column(db.Float, primary_key = True)
-    name = db.Column(db.String)
-
-    def __init__(self):
-        self.price = price
-        self.name = name
 
 
 @app.route('/')
@@ -43,16 +23,16 @@ def crawlers():
         if request.method == "POST":
             current_category = request.form["category"]
             current_name = request.form["name"]
-            current_search = request.form["search"]
+            current_url = request.form["url"]
             return render_template("crawlers.html", categories=categories,
                                    subcategories=subcategories[current_category],
                                    current_category=current_category,
-                                   name=current_name, search=current_search)
+                                   name=current_name, url=current_url)
 
         elif request.method == "GET":
             # on first loading crawlers.html
             return render_template("crawlers.html", categories=categories, subcategories=subcategories["All"],
-                                   current_category="All", name="", search="")
+                                   current_category="All", name="", url="")
     except Exception as e:
         return render_template("error.html", error=e)
 
@@ -67,7 +47,21 @@ def add():
     if request.method == "GET":
         return redirect(url_for("/"))
     elif request.method == "POST":
-        return redirect(url_for("database"))
+        current_name = request.form["name"]
+        current_category = request.form["category"]
+        current_subcategory = request.form["subcategory"]
+        current_url = request.form["url"]
+        if current_name == "":
+            # name input missing
+            flash("Please enter a name")
+            return render_template("crawlers.html", categories=categories,
+                                   subcategories=subcategories[current_category],
+                                   current_category=current_category, current_subcategory=current_subcategory,
+                                   name=current_name, url=current_url,
+                                   preview_content=preview_content)
+        else:
+            add_crawler(current_name, current_category, current_subcategory, current_url)
+            return redirect(url_for("/add"))
 
 
 @app.route('/preview', methods=["GET", "POST"])
@@ -78,13 +72,13 @@ def preview():
             global preview_content
             current_category = request.form["category"]
             current_name = request.form["name"]
-            current_search = request.form["search"]
+            current_url = request.form["url"]
             current_subcategory = request.form["subcategory"]
             preview_content = current_subcategory
             return render_template("crawlers.html", categories=categories,
                                    subcategories=subcategories[current_category],
                                    current_category=current_category, current_subcategory=current_subcategory,
-                                   name=current_name, search=current_search,
+                                   name=current_name, url=current_url,
                                    preview_content=preview_content)
 
         elif request.method == "GET":
@@ -92,9 +86,49 @@ def preview():
             global preview_content
             preview_content = None
             return render_template("crawlers.html", categories=categories, subcategories=subcategories["All"],
-                                   current_category="All", name="", search="")
+                                   current_category="All", name="", url="")
     except Exception as e:
         return render_template("error.html", error=e)
+
+
+@app.route('/delete_crawler', methods=["GET", "POST"])
+def delete_crawler():
+    if request.method == "GET":
+        return redirect(url_for("/"))
+    elif request.method == "POST":
+        return redirect(url_for("database"))
+
+
+@app.route('/rename_crawler', methods=["GET", "POST"])
+def rename_crawler():
+    if request.method == "GET":
+        return redirect(url_for("/"))
+    elif request.method == "POST":
+        return redirect(url_for("database"))
+
+
+@app.route('/info_crawler', methods=["GET", "POST"])
+def info_crawler():
+    if request.method == "GET":
+        return redirect(url_for("/"))
+    elif request.method == "POST":
+        return redirect(url_for("database"))
+
+
+@app.route('/start_crawler', methods=["GET", "POST"])
+def start_crawler():
+    if request.method == "GET":
+        return redirect(url_for("/"))
+    elif request.method == "POST":
+        return redirect(url_for("database"))
+
+
+@app.route('/stop_crawler', methods=["GET", "POST"])
+def stop_crawler():
+    if request.method == "GET":
+        return redirect(url_for("/"))
+    elif request.method == "POST":
+        return redirect(url_for("database"))
 
 
 if __name__ == "__main__":
