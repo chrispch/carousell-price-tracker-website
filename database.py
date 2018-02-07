@@ -1,10 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, Float, String, MetaData, Table
-from sqlalchemy.orm import sessionmaker, mapper
-from sqlalchemy.ext.declarative import declarative_base
-
-engine = create_engine('postgresql://postgres:hern3010@localhost/price-tracker', echo=True)
-Base = declarative_base()
-metadata = MetaData()
+# from sqlalchemy import create_engine, db.Column, db.Integer, db.Float, db.String, MetaData, Table
+# from sqlalchemy.orm import sessionmaker, mapper
+# from sqlalchemy.ext.declarative import declarative_base
+from flask_sqlalchemy import SQLAlchemy
+from __init__ import app
 
 categories = {"All": "https://carousell.com/",
               "Electronics": "https://carousell.com/categories/electronics-7/",
@@ -19,21 +17,38 @@ subcategories = {"All": {"All": ""},
                  "Mobiles & Tablets": {"iPhones": "iphones-1235/",
                                        "Android": "androidphones-1237/"}}
 
+db = SQLAlchemy(app)
 
-class Db(Base):
+class User(db.Model):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    email = Column(String, unique=True)
-    password = Column(String)
+    user_id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String, unique=True)
+    password = db.Column(db.String)
 
-
-class User(object):  # object inheritance is for Python 2 backwards compatibility
     def __init__(self, email, password):
         self.email = email
         self.password = password
 
 
-class Crawler(object):
+class UsersToCrawlers(db.Model):
+    __tablename__ = "users_crawlers"
+    user_id = db.Column(db.Integer, primary_key=True)
+    crawler_id = db.Column(db.Integer)
+
+    def __init__(self, user_id, crawler_id):
+        self.user_id = user_id
+        self.crawler_id = crawler_id
+
+
+class Crawler(db.Model):
+    __tablename__ = "crawlers"
+    crawler_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, unique=True)
+    category = db.Column(db.String)
+    subcategory = db.Column(db.String)
+    url = db.Column(db.String)
+    status = db.Column(db.String)
+
     def __init__(self, name, category, subcategory, url, status):
         self.name = name
         self.category = category
@@ -42,78 +57,59 @@ class Crawler(object):
         self.status = status
 
 
-class Data(object):
-    def __init__(self, name, price, date):
+class Data(db.Model):
+    __tablename__ = "data"
+    data_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    price = db.Column(db.Float)
+    date = db.Column(db.String)
+
+    def __init__(self, data_id, name, price, date):
+        self.data_id = data_id
         self.name = name
         self.price = price
-        self.data = data
+        self.date = date
 
 
 def create_user(email, password):
-    new_user = Db(email=email, password=password)
-    create_user_table(email)
-    return new_user
+    new_user = User(email=email, password=password)
+    if db.session.query(User).filter(User.email == new_user.email).count() == 0:
+        db.session.add(new_user)
+        db.session.commit()
 
 
-def add_user(user):
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    if session.query(Db).filter(Db.email == user.email).count() == 0:
-        session.add(user)
-        session.commit()
-        session.close()
-
-
-def create_user_table(email):
-    # Creates a table belonging to user:email which contains user's crawlers
-    user_table = Table(email, metadata,
-                        Column("id", Integer, primary_key=True),
-                        Column("name", String, unique=True),
-                        Column("category", String),
-                        Column("subcategory", String),
-                        Column("url", String),
-                        Column("status", String)
-                       )
-    metadata.create_all(engine)
-    mapper(Crawler, user_table)
-
-
-def create_crawler(name, category, subcategory, url, status):
-    if url != "":
-        effective_url = categories[category] + subcategories[category][subcategory]
-    else:
+def create_crawler(user, name, category, subcategory, url, status):
+    if url:
         effective_url = url
+    else:
+        effective_url = categories[category] + subcategories[category][subcategory]
+    # create and add crawler
     new_crawler = Crawler(name, category, subcategory, effective_url, status)
-    return new_crawler
+    if db.session.query(Crawler).filter(Crawler.name == new_crawler.name).count() == 0:
+        print("Crawler added")
+        db.session.add(new_crawler)
+        db.session.commit()
+
+    # create and add relation to user
+    userid = db.session.query(User.user_id).filter(User.email == user).first()
+    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == name).first()
+    relation = UsersToCrawlers(userid, crawlerid)
+    if db.session.query(UsersToCrawlers).filter(UsersToCrawlers.crawler_id == crawlerid).count() == 0:
+        db.session.add(relation)
+        db.session.commit()
+
+def delete_crawler(crawler_name):
+    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler_name).first()
+    if crawlerid:  # if crawler exists
+        crawler = db.session.query(Crawler).get(crawlerid)
+        crawler_relation = db.session.query(UsersToCrawlers).get(crawlerid)
+        db.session.delete(crawler)
+        db.session.delete(crawler_relation)
+        db.session.commit()
+
+# db.create_all()
 
 
-def add_crawler(crawler):
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    if session.query(Crawler).filter(Crawler.name == crawler.name).count() == 0:
-        session.add(crawler)
-        session.commit()
-        session.close()
-
-
-
-
-# def delete_crawler(crawler):
-
-Base.metadata.create_all(engine)
-
-
-# Session = sessionmaker(bind=engine)
-# session = Session()
-#
-new_user = create_user("test2@mail.com", "password")
-add_user(new_user)
-new_crawler = create_crawler("hi", "electronics", "audio", "", "active")
-add_crawler(new_crawler)
-#
-# session.add(Crawler(name="h", category="e", subcategory="y", url="!", status="active"))
-#
-# session.commit()
-# session.close()
-# c1 = create_crawler("hi", "electronics", "audio", "")
-# add_crawler(c1)
+create_user(email="test1@mail.com", password="pw")
+create_crawler(user="test1@mail.com", name="h2", category="Electronics", subcategory="Audio", url="", status="activated")
+# delete_crawler("h")
