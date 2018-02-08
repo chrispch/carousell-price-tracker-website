@@ -17,6 +17,41 @@
 	<title>Crawlers</title>
 </head>
 <body>
+	{% if session.logged_in %}
+
+	<!-- Navigation Bar -->
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<!-- Brand -->
+		<a class="navbar-brand" href="{{ url_for('home') }}">carousell-price-tracker</a>
+
+		<!-- Collapse Menu -->
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<!-- Collapse Menu List -->
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<!-- Crawlers Link -->
+				<li class="nav-item">
+					<a class="{{crawlers_nav}}" href="{{ url_for('crawlers') }}">Crawlers <span class="sr-only">(current)</span></a>
+				</li>
+				<!-- Database Link -->
+				<li class="nav-item">
+					<a class="{{database_nav}}" href="{{ url_for('database') }}">Database</a>
+				</li>
+			</ul>
+			
+			<!-- Logout -->
+			<ul class="nav navbar-nav ml-auto">
+				<li class="nav-item">
+					<a class="nav-link" href="#">Logout</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+
+	{% else %}
 
 	<!-- Navigation Bar -->
 	<nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -31,28 +66,42 @@
 		<!-- Collapse Menu List -->
 		<div class="collapse navbar-collapse" id="navbarSupportedContent">
 			<ul class="navbar-nav mr-auto">
-				<!-- Crawlers Link -->
-				<li class="nav-item active">
-					<a class="nav-link" href="{{ url_for("crawlers") }}">Crawlers <span class="sr-only">(current)</span></a>
-				</li>
-				<!-- Database Link -->
+				<!-- Crawlers Link Disabled -->
 				<li class="nav-item">
-					<a class="nav-link" href="{{ url_for("database") }}">Database</a>
+					<a class="nav-link disabled" data-toggle="tooltip" data-placement="bottom" title="Please login">Crawlers <span class="sr-only">(current)</span></a>
+				</li>
+				<!-- Database Link Disabled -->
+				<li class="nav-item">
+					<a class="nav-link disabled" data-toggle="tooltip" data-placement="bottom" title="Please login">Database</a>
 				</li>
 			</ul>
 			
-			<!-- Logout -->
 			<ul class="nav navbar-nav ml-auto">
+				<!-- Register -->
 				<li class="nav-item">
-					<a class="nav-link" href="#">Logout</a>
+					<a class="nav-link" data-toggle="modal" data-target="#register_modal">Register</a>
+				</li>
+				<!-- Login -->
+				<li class="nav-item">
+					<a class="nav-link" data-toggle="modal" data-target="#login_modal">Login</a>
 				</li>
 			</ul>
 		</div>
 	</nav>
+
+	{%include "login_modal.html"%}
+	{%include "register_modal.html"%}
+
+	{% endif %}
 	
 	<!-- Body content goes here -->
 	{%block content%}
 	{%endblock%}
+	
+	<!-- Enable bootstrap tooltips -->
+	<script>$(function () {
+	  $('[data-toggle="tooltip"]').tooltip()})
+	</script>
 
 </body>
 </html>

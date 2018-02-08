@@ -2,7 +2,7 @@
 # from sqlalchemy.orm import sessionmaker, mapper
 # from sqlalchemy.ext.declarative import declarative_base
 from flask_sqlalchemy import SQLAlchemy
-from __init__ import app
+from __init__ import db
 
 categories = {"All": "https://carousell.com/",
               "Electronics": "https://carousell.com/categories/electronics-7/",
@@ -17,7 +17,7 @@ subcategories = {"All": {"All": ""},
                  "Mobiles & Tablets": {"iPhones": "iphones-1235/",
                                        "Android": "androidphones-1237/"}}
 
-db = SQLAlchemy(app)
+
 
 
 class User(db.Model):
@@ -88,6 +88,7 @@ def create_user(email, password):
     if db.session.query(User).filter(User.email == new_user.email).count() == 0:
         db.session.add(new_user)
         db.session.commit()
+        return True
 
 
 def create_crawler(user, name, category, subcategory, url, status):
@@ -155,7 +156,8 @@ def delete_data(data_id):
 db.create_all()
 
 
-create_user(email="test1@mail.com", password="pw")
-create_crawler(user="test1@mail.com", name="h2", category="Electronics", subcategory="Audio", url="", status="activated")
-create_data("h2", "test_data", 5.0, "5/5/18")
-delete_crawler("h2")
+
+# create_user(email="test1@mail.com", password="pw")
+# create_crawler(user="test1@mail.com", name="h2", category="Electronics", subcategory="Audio", url="", status="activated")
+# create_data("h2", "test_data", 5.0, "5/5/18")
+# delete_crawler("h2")

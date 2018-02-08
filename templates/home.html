@@ -1,0 +1,34 @@
+{%extends "nav_bar.html"%}
+
+{%block content%}
+{% if session.logged_in %}
+
+<div class="jumbotron">
+	<h1 class="display-4">Hello, world!</h1>
+	<p class="lead">
+		Add a crawler under the "Crawlers" tab to begin collecting information from Carousell. <br>
+		Go to the "Database" tab to view the data that you have collected.
+	</p>
+	<a class="btn btn-primary" href="{{ url_for('crawlers') }}" role="button">Go to Crawlers</a>
+	<a class="btn btn-primary" href="{{ url_for('database') }}" role="button">Go to Database</a>
+</div>
+
+
+{% else %}
+<div class="container" style="padding-top: 10px; padding-left: 10px; padding-right: 10px;">
+	<div class="jumbotron">
+		<h1 class="display-4">Welcome!</h1>
+		<p class="lead">
+		This is a price checker for the online marketplace Carousell. <br>
+		Please login to continue.
+		</p>
+		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#register_modal">Register</button>
+	    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#login_modal">Login</button>
+	</div>
+</div>
+{%include "login_modal.html"%}
+{%include "register_modal.html"%}
+
+{% endif %}
+
+{%endblock%}	
