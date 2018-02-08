@@ -18,8 +18,6 @@ subcategories = {"All": {"All": ""},
                                        "Android": "androidphones-1237/"}}
 
 
-
-
 class User(db.Model):
     __tablename__ = "users"
     user_id = db.Column(db.Integer, primary_key=True)
@@ -49,14 +47,14 @@ class Crawler(db.Model):
     category = db.Column(db.String)
     subcategory = db.Column(db.String)
     url = db.Column(db.String)
-    status = db.Column(db.String)
+    active = db.Column(db.Boolean)
 
-    def __init__(self, name, category, subcategory, url, status):
+    def __init__(self, name, category, subcategory, url, active):
         self.name = name
         self.category = category
         self.subcategory = subcategory
         self.url = url
-        self.status = status
+        self.active = active
 
 
 class CrawlersToData(db.Model):

@@ -1,16 +1,25 @@
 {%extends "nav_bar.html"%}
 
 {%block content%}
+
+<!-- Flash messages -->
+{% for message in get_flashed_messages() %}
+	<div class="alert alert-warning" role="alert" style="margin: 10px 10px 0px 10px">
+	  {{message}}
+	</div>
+{% endfor %}
 {% if session.logged_in %}
 
-<div class="jumbotron">
-	<h1 class="display-4">Hello, world!</h1>
-	<p class="lead">
-		Add a crawler under the "Crawlers" tab to begin collecting information from Carousell. <br>
-		Go to the "Database" tab to view the data that you have collected.
-	</p>
-	<a class="btn btn-primary" href="{{ url_for('crawlers') }}" role="button">Go to Crawlers</a>
-	<a class="btn btn-primary" href="{{ url_for('database') }}" role="button">Go to Database</a>
+<div class="container" style="padding-top: 10px; padding-left: 10px; padding-right: 10px;">
+	<div class="jumbotron">
+		<h1 class="display-4">Get Started</h1>
+		<p class="lead">
+			Add a crawler under the "Crawlers" tab to begin collecting information from Carousell <br>
+			Go to the "Database" tab to view the data that you have collected
+		</p>
+		<a class="btn btn-primary" href="{{ url_for('crawlers') }}" role="button">Go to Crawlers</a>
+		<a class="btn btn-primary" href="{{ url_for('database') }}" role="button">Go to Database</a>
+	</div>
 </div>
 
 
@@ -19,8 +28,8 @@
 	<div class="jumbotron">
 		<h1 class="display-4">Welcome!</h1>
 		<p class="lead">
-		This is a price checker for the online marketplace Carousell. <br>
-		Please login to continue.
+		This is a price tracker for the online marketplace, Carousell <br>
+		Please login to continue
 		</p>
 		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#register_modal">Register</button>
 	    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#login_modal">Login</button>
