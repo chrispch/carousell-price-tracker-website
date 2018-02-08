@@ -19,6 +19,7 @@ subcategories = {"All": {"All": ""},
 
 db = SQLAlchemy(app)
 
+
 class User(db.Model):
     __tablename__ = "users"
     user_id = db.Column(db.Integer, primary_key=True)
@@ -32,7 +33,8 @@ class User(db.Model):
 
 class UsersToCrawlers(db.Model):
     __tablename__ = "users_crawlers"
-    user_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
     crawler_id = db.Column(db.Integer)
 
     def __init__(self, user_id, crawler_id):
@@ -57,6 +59,17 @@ class Crawler(db.Model):
         self.status = status
 
 
+class CrawlersToData(db.Model):
+    __tablename__ = "crawlers_data"
+    id = db.Column(db.Integer, primary_key=True)
+    crawler_id = db.Column(db.Integer)
+    data_id = db.Column(db.Integer)
+
+    def __init__(self, crawler_id, data_id):
+        self.crawler_id = crawler_id
+        self.data_id = data_id
+
+
 class Data(db.Model):
     __tablename__ = "data"
     data_id = db.Column(db.Integer, primary_key=True)
@@ -64,8 +77,7 @@ class Data(db.Model):
     price = db.Column(db.Float)
     date = db.Column(db.String)
 
-    def __init__(self, data_id, name, price, date):
-        self.data_id = data_id
+    def __init__(self, name, price, date):
         self.name = name
         self.price = price
         self.date = date
@@ -93,10 +105,22 @@ def create_crawler(user, name, category, subcategory, url, status):
     # create and add relation to user
     userid = db.session.query(User.user_id).filter(User.email == user).first()
     crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == name).first()
-    relation = UsersToCrawlers(userid, crawlerid)
+    new_relation = UsersToCrawlers(userid, crawlerid)
     if db.session.query(UsersToCrawlers).filter(UsersToCrawlers.crawler_id == crawlerid).count() == 0:
-        db.session.add(relation)
+        db.session.add(new_relation)
         db.session.commit()
+
+
+def create_data(crawler, name, price, date):
+    new_data = Data(name=name, price=price, date=date)
+    db.session.add(new_data)
+    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
+    # data_id of most recently added crawler with new_data.name
+    dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).all()[-1]
+    new_relation = CrawlersToData(crawlerid, dataid)
+    db.session.add(new_relation)
+    db.session.commit()
+
 
 def delete_crawler(crawler_name):
     crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler_name).first()
@@ -107,9 +131,31 @@ def delete_crawler(crawler_name):
         db.session.delete(crawler_relation)
         db.session.commit()
 
-# db.create_all()
+    # delete associated data
+    related_data = []
+    for relation_object in db.session.query(CrawlersToData).filter(CrawlersToData.crawler_id == crawlerid).all():
+        related_data.append(relation_object.data_id)
+        db.session.delete(relation_object)
+        db.session.commit()
+    for data in db.session.query(Data).filter(Data.data_id.in_(related_data)).all():
+        db.session.delete(data)
+        db.session.commit()
+
+
+def delete_data(data_id):
+    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler_name).first()
+    if data_id:  # if crawler exists
+        data = db.session.query(Data).get(data_id)
+        data_relation = db.session.query(CrawlersToData).get(data_id)
+        db.session.delete(data)
+        db.session.delete(data_relation)
+        db.session.commit()
+
+
+db.create_all()
 
 
 create_user(email="test1@mail.com", password="pw")
 create_crawler(user="test1@mail.com", name="h2", category="Electronics", subcategory="Audio", url="", status="activated")
-# delete_crawler("h")
+create_data("h2", "test_data", 5.0, "5/5/18")
+delete_crawler("h2")
