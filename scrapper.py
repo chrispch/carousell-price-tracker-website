@@ -1,49 +1,64 @@
 import requests
 from bs4 import BeautifulSoup
 import difflib
-import pandas
+from datetime import date, timedelta
 
-search_catergories = {"audio+audiophile":"https://carousell.com/search/products/?sort_by=time_created%2Cdescending&audio_features=AUDIO_FEATURES_FOR_AUDIOPHILES&query={}&collection_id=207&cc_id=356"\
-                        }
-tracked_items = ["sennheiser"]
+
 exception_words = ["spoilt", "broken", "1/10", "2/10", "3/10", "4/10"]
 acceptable_price = {"min": 1, "max": 9999}
-labels = tracked_items
-data = {}
 
-# query and collect listings for each tracked item
-def scrap():
-    for k, v in search_catergories.items():
-        for item in tracked_items:
-            search_path = v.format(item)
-            try:
-                # request data
-                r = requests.get(search_path)
-                c = r.content
-                soup = BeautifulSoup(c, "html.parser")
-                names = soup.find_all("h4", {"id": "productCardTitle"})
-                info = soup.find_all("dl")  # contains price and desc
-                data[item] = []
-                # process data
-                for n, i in zip(names, info):
-                    name = n.text
-                    x = i.find_all("dd")
-                    price = x[0].text
-                    desc = x[1].text
-                    # filter listings with exception words
-                    valid = True
-                    for ex in exception_words:
-                        if ex in desc:
-                            valid = False
-                    # filter listings with acceptable prices
-                    if not acceptable_price["min"] < float(price[2:].replace(",", "")) < acceptable_price["max"]:
-                        valid = False
-                    # process only listings that pass the exception filter
-                    if valid:
-                        data[item].append({"name": name, "price": price})
 
-            except requests.exceptions.RequestException:
-                print("Connection failed")
+# query and collect listings for a given URL and returns an array with data
+def scrap(url):
+    try:
+        data = []  # array to be returned
+        # request data
+        r = requests.get(url)
+        c = r.content
+        soup = BeautifulSoup(c, "html.parser")
+        names = soup.find_all("h4", {"id": "productCardTitle"}) # name of listing
+        info = soup.find_all("dl")  # contains price and desc
+        time_ago = soup.find_all("time")
+        current_date = date.today()
+        # process list of listings from page
+        for n, i, t in zip(names, info, time_ago):
+            name = n.text
+            x = i.find_all("dd")
+            price = x[0].text
+            desc = x[1].text
+            # parse time ago data
+            t_split = t.text.split(" ")
+            if t_split[0] == "last":
+                t_split[0] = "1"
+            if "yesterday" in t_split[0]:
+                d = current_date - timedelta(days=1)
+            elif "year" in t_split[1]:
+                d = date(current_date.year-int(t_split[0]), current_date.month, current_date.day)
+            elif "month" in t_split[1]:
+                if current_date.month <= int(t_split[0]):
+                    d = date(current_date.year - 1, 12 - int(t_split[0]) + current_date.month, current_date.day)
+                else:
+                    d = date(current_date.year, current_date.month - int(t_split[0]), current_date.day)
+            elif "day" in t_split[1]:
+                d = current_date - timedelta(days=int(t_split[0]))
+            else:
+                d = current_date
+
+            # filter listings with exception words
+            valid = True
+            for ex in exception_words:
+                if ex in desc:
+                    valid = False
+            # filter listings with acceptable prices
+            if not acceptable_price["min"] < float(price[2:].replace(",", "")) < acceptable_price["max"]:
+                valid = False
+            # add listings to array
+            if valid:
+                data.append({"name": name, "price": price, "date": str(d)})
+        return data
+
+    except requests.exceptions.RequestException:
+        print("Connection failed")
 
 
 # generate additional smart labels based on common words in listing names
@@ -106,9 +121,10 @@ def search_database(lbs, scope, tolerance=1):
     return search_results
 
 
-scrap()
-generate_labels(data["sennheiser"])
-print(search_database(["sennheiser", "headphones"], [data["sennheiser"]]))
+for i in scrap("https://carousell.com/categories/electronics-7/audio-207/?sort_by=&collection_id=207&cc_id=356"):
+    print(i)
+# generate_labels(data["sennheiser"])
+# print(search_database(["sennheiser", "headphones"], [data["sennheiser"]]))
 
 
 # df = pandas.DataFrame(data)

@@ -4,17 +4,17 @@
 from flask_sqlalchemy import SQLAlchemy
 from __init__ import db
 
-categories = {"All": "https://carousell.com/",
-              "Electronics": "https://carousell.com/categories/electronics-7/",
+categories = {"Electronics": "https://carousell.com/categories/electronics-7/",
               "Mobiles & Tablets": "https://carousell.com/categories/mobile-phones-215/"}
 
-subcategories = {"All": {"All": ""},
-                 "Electronics": {"Computers": "computers-tablets-213/",
+subcategories = {"Electronics": {"All": "",
+                                 "Computers": "computers-tablets-213/",
                                  "TV & Entertainment Systems": "tvs-entertainment-systems-217/",
                                  "Audio": "audio-207/",
                                  "Computer Parts & Accessories": "computer-parts-accessories-214/",
                                  "Others": "electronics-others-218/"},
-                 "Mobiles & Tablets": {"iPhones": "iphones-1235/",
+                 "Mobiles & Tablets": {"All": "",
+                                       "iPhones": "iphones-1235/",
                                        "Android": "androidphones-1237/"}}
 
 
@@ -101,13 +101,16 @@ def create_crawler(user, name, category, subcategory, url, status):
         db.session.add(new_crawler)
         db.session.commit()
 
-    # create and add relation to user
-    userid = db.session.query(User.user_id).filter(User.email == user).first()
-    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == name).first()
-    new_relation = UsersToCrawlers(userid, crawlerid)
-    if db.session.query(UsersToCrawlers).filter(UsersToCrawlers.crawler_id == crawlerid).count() == 0:
-        db.session.add(new_relation)
-        db.session.commit()
+        # create and add relation to user
+        userid = db.session.query(User.user_id).filter(User.email == user).first()
+        crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == name).first()
+        new_relation = UsersToCrawlers(userid, crawlerid)
+        if db.session.query(UsersToCrawlers).filter(UsersToCrawlers.crawler_id == crawlerid).count() == 0:
+            db.session.add(new_relation)
+            db.session.commit()
+        return True
+    else:
+        return False
 
 
 def create_data(crawler, name, price, date):
@@ -158,4 +161,4 @@ db.create_all()
 # create_user(email="test1@mail.com", password="pw")
 # create_crawler(user="test1@mail.com", name="h2", category="Electronics", subcategory="Audio", url="", status="activated")
 # create_data("h2", "test_data", 5.0, "5/5/18")
-# delete_crawler("h2")
+

@@ -95,10 +95,10 @@ def crawlers():
         elif request.method == "GET":
             if session["logged_in"]:
                 # on first loading crawlers.html
-                return render_template("crawlers.html", categories=categories, subcategories=subcategories["All"],
-                                       current_category="All", name="", url="", database_nav="nav-link",
+                return render_template("crawlers.html", categories=categories, subcategories=subcategories["Electronics"],
+                                       current_category="Electronics", name="", url="", database_nav="nav-link",
                                        crawlers_nav="nav-link active", active_crawlers=active_crawlers,
-                                   inactive_crawlers=inactive_crawlers)
+                                       inactive_crawlers=inactive_crawlers)
             else:
                 return redirect(url_for("home"))
     except Exception as e:
@@ -108,10 +108,17 @@ def crawlers():
 @app.route('/database', methods=["GET", "POST"])
 def database():
     if request.method == "POST":
-        pass
+        crawler_names = db.session.query(Crawler.name).filter(User.email == session["user_email"]).all()
+        current_crawler = request.form["crawler-name"]
+        current_search = request.form["search"]
+        return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                               crawler_names=crawler_names, current_crawler=current_crawler,
+                               current_search=current_search)
     elif request.method == "GET":
         if session["logged_in"]:
-            return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link")
+            crawler_names = db.session.query(Crawler.name).filter(User.email == session["user_email"]).all()
+            return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                   crawler_names=crawler_names, current_crawler=crawler_names[0])
         else:
             return redirect(url_for("home"))
 
@@ -126,8 +133,10 @@ def add():
         current_subcategory = request.form["subcategory"]
         current_url = request.form["url"]
         current_user = session["user_email"]
-        create_crawler(current_user, current_name, current_category, current_subcategory, current_url, True)
-        flash("Crawler '{}' added successfully!".format(current_name))
+        if create_crawler(current_user, current_name, current_category, current_subcategory, current_url, True):
+            flash("Crawler '{}' added successfully!".format(current_name))
+        else:
+            flash("Crawler name is already in use. Please try again.")
         return redirect(url_for("crawlers"))
 
 
@@ -158,12 +167,14 @@ def preview():
         return render_template("error.html", error=e)
 
 
-@app.route('/delete_crawler', methods=["GET", "POST"])
-def delete_crawler():
+@app.route('/del_crawler', methods=["GET", "POST"])
+def del_crawler():
     if request.method == "GET":
         return redirect(url_for("home"))
     elif request.method == "POST":
-        return redirect(url_for("database"))
+        delete_crawler(request.form["delete"])
+        flash("Crawler '{}' deleted successfully!".format(request.form["delete"]))
+        return redirect(url_for("crawlers"))
 
 
 @app.route('/rename_crawler', methods=["GET", "POST"])
@@ -171,7 +182,16 @@ def rename_crawler():
     if request.method == "GET":
         return redirect(url_for("home"))
     elif request.method == "POST":
-        return redirect(url_for("database"))
+        old_name = request.form["rename"]
+        new_name = request.form["name"]
+        if db.session.query(Crawler).filter(Crawler.name == new_name).count() == 0:
+            db.session.query(Crawler).filter(Crawler.name == old_name).first().name = new_name
+            db.session.commit()
+            flash("Crawler renamed successfully")
+            return redirect(url_for("crawlers"))
+        else:
+            flash("Crawler name already in use. Rename failed.")
+            return redirect(url_for("crawlers"))
 
 
 @app.route('/info_crawler', methods=["GET", "POST"])
@@ -187,7 +207,10 @@ def start_crawler():
     if request.method == "GET":
         return redirect(url_for("home"))
     elif request.method == "POST":
-        return redirect(url_for("database"))
+        db.session.query(Crawler).filter(Crawler.name == request.form["start"]).first().active = True
+        db.session.commit()
+        flash("Crawler '{}' started successfully!".format(request.form["start"]))
+        return redirect(url_for("crawlers"))
 
 
 @app.route('/stop_crawler', methods=["GET", "POST"])
@@ -195,7 +218,10 @@ def stop_crawler():
     if request.method == "GET":
         return redirect(url_for("home"))
     elif request.method == "POST":
-        return redirect(url_for("database"))
+        db.session.query(Crawler).filter(Crawler.name == request.form["stop"]).first().active = False
+        db.session.commit()
+        flash("Crawler '{}' stopped successfully!".format(request.form["stop"]))
+        return redirect(url_for("crawlers"))
 
 
 if __name__ == "__main__":

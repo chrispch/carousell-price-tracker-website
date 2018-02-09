@@ -24,7 +24,7 @@
 	<!-- Add crawler tab -->
 	<div class="tab-pane active" id="add" role="tabpanel">
 		<div class="container">
-			<form action="" method="post" style="padding-top: 10px;">
+			<form action="" method="post" class="border-bottom" style="padding-bottom: 10px; padding-top: 10px;">
 		
 				<!-- Crawler Name -->
 			
@@ -54,7 +54,7 @@
 						<label for="subcategory">Subcategory</label>
 							<select name="subcategory" class="form-control" id="subcategory">
 								{% for i in subcategories %}
-									{% if i == current_subcategory %}
+									{% if i == "All" %}
 										<option selected>{{i}}</option>			
 									{% else %}
 										<option>{{i}}</option>
@@ -112,12 +112,12 @@
 					<!-- Category -->
 					<div class="form-group col-md-3">
 						<label for="category" class="font-weight-bold">Category</label>
-						<input type="text" id="category" placeholder="-" value="{{crawler['category']}}" name="name" readonly class="form-control-plaintext">
+						<input type="text" id="category" placeholder="-" value="{{crawler['category']}}" name="category" readonly class="form-control-plaintext">
 					</div>
 					<!-- Subcategory -->
 					<div class="form-group col-md-3">
 						<label for="subcategory" class="font-weight-bold">Subcategory</label>
-						<input type="text" id="subcategory" placeholder="-" value="{{crawler['subcategory']}}" name="name" readonly class="form-control-plaintext">
+						<input type="text" id="subcategory" placeholder="-" value="{{crawler['subcategory']}}" name="subcategory" readonly class="form-control-plaintext">
 					</div>
 				</div>
 				
@@ -134,10 +134,10 @@
 					</div>
 					<!-- Submit Buttons -->
 					<div class="form-group ml-auto mt-auto">
-						<button class="btn btn-primary" type="submit" formaction={{ url_for("info_crawler") }}>Get Info</button>
-						<button class="btn btn-primary" type="submit" formaction={{ url_for("rename_crawler") }}>Rename</button>
-						<button class="btn btn-danger" type="submit" formaction={{ url_for("stop_crawler") }}>Stop</button>
-						<button class="btn btn-danger" type="submit" formaction={{ url_for("delete_crawler") }}>Delete</button>
+						<button class="btn btn-primary" type="submit" formaction="{{ url_for('info_crawler') }}">Get Info</button>
+						<button class="btn btn-primary" type="submit" formaction="{{ url_for('rename_crawler') }}" value="{{crawler['name']}}" name="rename">Rename</button>
+						<button class="btn btn-danger" type="submit" formaction="{{ url_for('stop_crawler') }}" value="{{crawler['name']}}" name="stop">Stop</button>
+						<button class="btn btn-danger" type="submit" formaction="{{ url_for('del_crawler') }}" value="{{crawler['name']}}" name="delete">Delete</button>
 					</div>
 				</div>
 			</form>
@@ -150,17 +150,17 @@
 					<!-- Name -->
 					<div class="form-group col-md-6" style="padding-right: 10px;">
 						<label for="crawler-name" class="font-weight-bold">Name</label>
-						<input type="text" id="crawler-name" value="{{crawler['name']}}" name="name" readonly class="form-control-plaintext">
+						<input type="text" id="crawler-name" value="{{crawler['name']}}" name="name" class="form-control">
 					</div>
 					<!-- Category -->
 					<div class="form-group col-md-3">
 						<label for="category" class="font-weight-bold">Category</label>
-						<input type="text" id="category" placeholder="-" value="{{crawler['category']}}" name="name" readonly class="form-control-plaintext">
+						<input type="text" id="category" placeholder="-" value="{{crawler['category']}}" name="category" readonly class="form-control-plaintext">
 					</div>
 					<!-- Subcategory -->
 					<div class="form-group col-md-3">
 						<label for="subcategory" class="font-weight-bold">Subcategory</label>
-						<input type="text" id="subcategory" placeholder="-" value="{{crawler['subcategory']}}" name="name" readonly class="form-control-plaintext">
+						<input type="text" id="subcategory" placeholder="-" value="{{crawler['subcategory']}}" name="subcategory" readonly class="form-control-plaintext">
 					</div>
 				</div>
 				
@@ -173,14 +173,14 @@
 					<!-- Status -->
 					<div class="form-group col-md-2">
 						<label for="status" class="font-weight-bold">Status</label>
-						<input name="status" type="text" id="status" value="Paused." readonly class="form-control-plaintext">
+						<input name="status" type="text" id="status" value="Paused" readonly class="form-control-plaintext">
 					</div>
 					<!-- Submit Buttons -->
 					<div class="form-group ml-auto mt-auto">
-						<button class="btn btn-primary" type="submit" formaction={{ url_for("info_crawler") }}>Get Info</button>
-						<button class="btn btn-primary" type="submit" formaction={{ url_for("rename_crawler") }}>Rename</button>
-						<button class="btn btn-success" type="submit" formaction={{ url_for("start_crawler") }}>Start</button>
-						<button class="btn btn-danger" type="submit" formaction={{ url_for("delete_crawler") }}>Delete</button>
+						<button class="btn btn-primary" type="submit" formaction='{{ url_for("info_crawler") }}'>Get Info</button>
+						<button class="btn btn-primary" type="submit" formaction='{{ url_for("rename_crawler") }}' name="{{crawler['name']}}">Rename</button>
+						<button class="btn btn-success" type="submit" formaction='{{ url_for("start_crawler") }}' value="{{crawler['name']}}" name="start">Start</button>
+						<button class="btn btn-danger" type="submit" formaction='{{ url_for("del_crawler") }}' value="{{crawler['name']}}" name="delete">Delete</button>
 					</div>
 				</div>
 			</form>	
