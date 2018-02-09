@@ -24,7 +24,8 @@ def scrap(url):
         for n, i, t in zip(names, info, time_ago):
             name = n.text
             x = i.find_all("dd")
-            price = x[0].text
+            price_text = x[0].text
+            price = float("".join(ele for ele in price_text if ele.isdigit()))
             desc = x[1].text
             # parse time ago data
             t_split = t.text.split(" ")
@@ -50,7 +51,7 @@ def scrap(url):
                 if ex in desc:
                     valid = False
             # filter listings with acceptable prices
-            if not acceptable_price["min"] < float(price[2:].replace(",", "")) < acceptable_price["max"]:
+            if not acceptable_price["min"] < price < acceptable_price["max"]:
                 valid = False
             # add listings to array
             if valid:
@@ -62,23 +63,19 @@ def scrap(url):
 
 
 # generate additional smart labels based on common words in listing names
-def generate_labels(scope, scope_all = False):
+def generate_labels(data):
     # collect all words in given scope
     words = []
-    if scope_all:
-        for subscope in scope:
-            for ls in subscope:
-                for w in ls["name"].split(" "):
-                    words.append(w)
-    else:
-        for ls in scope:
-            for w in ls["name"].split(" "):
+    labels = []
+    for d in data:
+        for w in d.name.split(" "):
+            if w != "":
                 words.append(w)
 
     # find word frequency
     word_frequency = {}
     for w1 in words:
-        word_frequency[w1] = 1
+        word_frequency[w1] = 0
         for w2 in words:
             if w1 == w2:
                 word_frequency[w1] += 1
@@ -86,11 +83,17 @@ def generate_labels(scope, scope_all = False):
 
     max_return = 3  # number of labels to return
     for i in range(max_return):
-        top_word = max(word_frequency, key=word_frequency.get)  # returns highest frequency word as label
-        word_frequency.pop(top_word)
-        new_label = top_word.lower()
-        if new_label not in labels:
+        # returns highest frequency word as label
+        top_word = max(word_frequency, key=lambda p: word_frequency[p])
+        # print(word_frequency[top_word])
+        if word_frequency[top_word] > 1:
+            new_label = top_word.lower()
             labels.append(new_label)
+            word_frequency.pop(top_word)
+    if labels:
+        return labels
+    else:
+        return None
 
 
 def search_database(lbs, scope, tolerance=1):
@@ -121,8 +124,6 @@ def search_database(lbs, scope, tolerance=1):
     return search_results
 
 
-for i in scrap("https://carousell.com/categories/electronics-7/audio-207/?sort_by=&collection_id=207&cc_id=356"):
-    print(i)
 # generate_labels(data["sennheiser"])
 # print(search_database(["sennheiser", "headphones"], [data["sennheiser"]]))
 

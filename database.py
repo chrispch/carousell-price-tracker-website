@@ -4,6 +4,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from __init__ import db
 
+# global categories, subcategories
 categories = {"Electronics": "https://carousell.com/categories/electronics-7/",
               "Mobiles & Tablets": "https://carousell.com/categories/mobile-phones-215/"}
 
@@ -115,13 +116,16 @@ def create_crawler(user, name, category, subcategory, url, status):
 
 def create_data(crawler, name, price, date):
     new_data = Data(name=name, price=price, date=date)
-    db.session.add(new_data)
-    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
-    # data_id of most recently added crawler with new_data.name
-    dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).all()[-1]
-    new_relation = CrawlersToData(crawlerid, dataid)
-    db.session.add(new_relation)
-    db.session.commit()
+    if db.session.query(Data).filter(Data.name == new_data.name).count() == 0 and \
+       db.session.query(Data).filter(Data.date == new_data.date).count() == 0 and \
+       db.session.query(Data).filter(Data.price == new_data.price).count() == 0:
+        db.session.add(new_data)
+        crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
+        # data_id of most recently added crawler with new_data.name
+        dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).all()[-1]
+        new_relation = CrawlersToData(crawlerid, dataid)
+        db.session.add(new_relation)
+        db.session.commit()
 
 
 def delete_crawler(crawler_name):
