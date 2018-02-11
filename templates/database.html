@@ -54,27 +54,59 @@
 			</div>
 		{% endif %}
 
+		<!-- Tolerance Value -->
+
 		<!-- Submit Button -->
 		<button class="btn btn-primary" type="submit">Search</button>
 
 	</form>
 	
-	<!-- Return data -->
+	<!-- Data Price Stats -->
+	<p class="font-weight-bold" style="font-size: 20px">Statistics</p>
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col">Max Price:</th>
+				<th scope="col">Min Price:</th>
+				<th scope="col">Average Price:</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% if price_stats != None %}
+			<tr>
+				<td><p class="text-success">{{price_stats["max_price"]}}</p></td>
+				<td><p class="text-danger">{{price_stats["min_price"]}}</p></td>
+				<td><p class="text-warning">{{price_stats["ave_price"]}}</p></td>
+			</tr>
+			{% else %}
+			<tr>
+				<td><p>-</p></td>
+				<td><p>-</p></td>
+				<td><p>-</p></td>
+			</tr>
+			{% endif %}
+		</tbody>
+	</table>
+
+	<!-- Returned Data -->
+	<p class="font-weight-bold" style="font-size: 20px">Data</p>
 	<table class="table">
 		<thead>
 			<tr>
 				<th scope="col">Name</th>
 				<th scope="col">Price</th>
 				<th scope="col">Date</th>
+				<th scope="col"></th>
 			</tr>
 		</thead>
 		{% if crawler_data != None %}
 		<tbody>
 			{% for data in crawler_data %}
 			<tr>
-				<td>{{data["name"]}}</td>
+				<td class="w-75"><a href="{{data['link']}}" target="_blank">{{data["name"]}}</a></td>
 				<td>{{data["price"]}}</td>
 				<td>{{data["date"]}}</td>
+				<td><form method="POST"><button class="btn btn-danger" type="submit" formaction="{{ url_for('del_data') }}" value="{{data['data_id']}}" name="delete">X</button></form></td>
 			</tr>
 			{% endfor %}
 		</tbody>

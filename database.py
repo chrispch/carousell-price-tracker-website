@@ -75,11 +75,13 @@ class Data(db.Model):
     name = db.Column(db.String)
     price = db.Column(db.Float)
     date = db.Column(db.String)
+    link = db.Column(db.String)
 
-    def __init__(self, name, price, date):
+    def __init__(self, name, price, date, link):
         self.name = name
         self.price = price
         self.date = date
+        self.link = link
 
 
 def create_user(email, password):
@@ -114,13 +116,14 @@ def create_crawler(user, name, category, subcategory, url, status):
         return False
 
 
-def create_data(crawler, name, price, date):
-    new_data = Data(name=name, price=price, date=date)
+def create_data(crawler, name, price, date, link):
+    new_data = Data(name=name, price=price, date=date, link=link)
     if db.session.query(Data).filter(Data.name == new_data.name).count() == 0 and \
        db.session.query(Data).filter(Data.date == new_data.date).count() == 0 and \
        db.session.query(Data).filter(Data.price == new_data.price).count() == 0:
         db.session.add(new_data)
         crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
+        print(crawlerid)
         # data_id of most recently added crawler with new_data.name
         dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).all()[-1]
         new_relation = CrawlersToData(crawlerid, dataid)
@@ -137,7 +140,7 @@ def delete_crawler(crawler_name):
         db.session.delete(crawler_relation)
         db.session.commit()
 
-    # delete associated data
+    # delete associated data and relation object
     related_data = []
     for relation_object in db.session.query(CrawlersToData).filter(CrawlersToData.crawler_id == crawlerid).all():
         related_data.append(relation_object.data_id)
@@ -149,17 +152,17 @@ def delete_crawler(crawler_name):
 
 
 def delete_data(data_id):
-    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler_name).first()
-    if data_id:  # if crawler exists
-        data = db.session.query(Data).get(data_id)
-        data_relation = db.session.query(CrawlersToData).get(data_id)
-        db.session.delete(data)
-        db.session.delete(data_relation)
-        db.session.commit()
+    # crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler_name).first()
+    # if data_id:  # if crawler exists
+    # dataid = db.session.query(Data.data_id).filter(Data.data_id == data_id).first()
+    data = db.session.query(Data).get(data_id)
+    data_relation = db.session.query(CrawlersToData).filter(CrawlersToData.data_id == data_id).first()
+    db.session.delete(data)
+    db.session.delete(data_relation)
+    db.session.commit()
 
 
 db.create_all()
-
 
 
 # create_user(email="test1@mail.com", password="pw")

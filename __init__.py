@@ -1,4 +1,6 @@
 from flask import Flask, request, session, redirect, url_for, render_template, flash
+
+from analytics import price_statistics
 from database import *
 from passlib.hash import sha256_crypt
 from scrapper import *
@@ -10,11 +12,12 @@ db = SQLAlchemy(app)
 
 preview_content = None
 
+
 @app.route('/')
 def home():
     data = scrap("https://carousell.com/categories/electronics-7/audio-207/")
     for d in data:
-        create_data("audio", d["name"], d["price"], d["date"])
+        create_data("audio", d["name"], d["price"], d["date"], d["link"])
     return render_template("home.html", database_nav="nav-link",
                                    crawlers_nav="nav-link")
 
@@ -59,30 +62,32 @@ def register():
 @app.route('/logout', methods=["GET", "POST"])
 def logout():
     session['logged_in'] = False
+    session['user_email'] = None
     return redirect(url_for("home"))
 
 
 @app.route('/crawlers', methods=["GET", "POST"])
 def crawlers():
     try:
-        # get user's crawlers
-        active_crawlers = []
-        inactive_crawlers = []
-        user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
-        crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == user_id).all()
-        for crawler_id in crawler_ids:
-            crawler = db.session.query(Crawler).filter(Crawler.crawler_id == crawler_id).first()
-            crawler_info = {}
-            crawler_info["name"] = crawler.name
-            crawler_info["category"] = crawler.category
-            crawler_info["subcategory"] = crawler.subcategory
-            crawler_info["url"] = crawler.url
-            crawler_info["active"] = crawler.active
-            # active crawlers
-            if crawler_info["active"]:
-                active_crawlers.append(crawler_info)
-            else:
-                inactive_crawlers.append(crawler_info)
+        if session["logged_in"]:
+            # get user's crawlers
+            active_crawlers = []
+            inactive_crawlers = []
+            user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
+            crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == user_id).all()
+            for crawler_id in crawler_ids:
+                crawler = db.session.query(Crawler).filter(Crawler.crawler_id == crawler_id).first()
+                crawler_info = {}
+                crawler_info["name"] = crawler.name
+                crawler_info["category"] = crawler.category
+                crawler_info["subcategory"] = crawler.subcategory
+                crawler_info["url"] = crawler.url
+                crawler_info["active"] = crawler.active
+                # active crawlers
+                if crawler_info["active"]:
+                    active_crawlers.append(crawler_info)
+                else:
+                    inactive_crawlers.append(crawler_info)
 
         if request.method == "POST":
             current_category = request.form["category"]
@@ -98,7 +103,6 @@ def crawlers():
                                    inactive_crawlers=inactive_crawlers, preview_content=preview_content)
 
         elif request.method == "GET":
-            if session["logged_in"]:
                 # on first loading crawlers.html
                 global preview_content
                 preview_content = None
@@ -106,42 +110,61 @@ def crawlers():
                                        current_category="Electronics", name="", url="", database_nav="nav-link",
                                        crawlers_nav="nav-link active", active_crawlers=active_crawlers,
                                        inactive_crawlers=inactive_crawlers, preview_content=preview_content)
-            else:
-                return redirect(url_for("home"))
-    except Exception as e:
-        return render_template("error.html", error=e)
+
+    except:
+        flash("Requested page is only accessible after logging in.")
+        return redirect(url_for("home"))
 
 
 @app.route('/database', methods=["GET", "POST"])
 def database():
-    current_user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
-    crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == current_user_id).all()
-    crawler_names = db.session.query(Crawler.name).filter(Crawler.crawler_id.in_(crawler_ids)).all()
-    selected_labels = request.form.getlist("suggested_labels")
-    print(selected_labels)
-    if request.method == "POST":
-        current_crawler = request.form["crawler-name"]
-        current_search = request.form["search"]
-        current_crawler_id = db.session.query(Crawler.crawler_id).filter(Crawler.name == current_crawler).first()[0]
-        data_ids = db.session.query(CrawlersToData.data_id).filter(CrawlersToData.crawler_id == current_crawler_id).all()
-        crawler_data = list(db.session.query(Data).filter(Data.data_id.in_(data_ids)).all())
-        if crawler_data:
-            suggested_labels = generate_labels(crawler_data)
-            return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
-                                   crawler_names=crawler_names, current_crawler=current_crawler,
-                                   current_search=current_search, crawler_data=crawler_data,
-                                   suggested_labels=suggested_labels, selected_labels=selected_labels)
-        else:
-            return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
-                                   crawler_names=crawler_names, current_crawler=current_crawler,
-                                   current_search=current_search, crawler_data=None, suggested_labels=None,
-                                   selected_labels=selected_labels)
-    elif request.method == "GET":
-        if session["logged_in"]:
-            return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
-                                   crawler_names=crawler_names, current_crawler=crawler_names)
-        else:
-            return redirect(url_for("home"))
+    try:
+        current_user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
+        crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == current_user_id).all()
+        crawler_names = db.session.query(Crawler.name).filter(Crawler.crawler_id.in_(crawler_ids)).all()
+        selected_labels = request.form.getlist("suggested_labels")
+        if request.method == "POST":
+            # get crawler data
+            current_crawler = request.form["crawler-name"]
+            current_search = request.form["search"]
+            current_crawler_id = db.session.query(Crawler.crawler_id).filter(Crawler.name == current_crawler).first()[0]
+            data_ids = db.session.query(CrawlersToData.data_id).filter(CrawlersToData.crawler_id == current_crawler_id).all()
+            crawler_data = list(db.session.query(Data).filter(Data.data_id.in_(data_ids)).all())
+            filter_labels = selected_labels
+            # combines selected labels and search terms for filtering
+            if current_search:
+                filter_labels.append(current_search)
+
+            if crawler_data:
+                suggested_labels = generate_labels(crawler_data)
+                if filter_labels:
+                    # filter data with filter labels
+                    crawler_data = filter_results(filter_labels, crawler_data)
+                # get price statistics
+                price_stats = price_statistics(crawler_data)
+                print(crawler_data[0].data_id)
+
+                return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                       crawler_names=crawler_names, current_crawler=current_crawler,
+                                       current_search=current_search, crawler_data=crawler_data,
+                                       suggested_labels=suggested_labels, selected_labels=selected_labels,
+                                       price_stats=price_stats)
+            else:
+                return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                       crawler_names=crawler_names, current_crawler=current_crawler,
+                                       current_search=current_search, crawler_data=None, suggested_labels=None,
+                                       selected_labels=selected_labels, price_stats=None)
+        elif request.method == "GET":
+            if session["logged_in"]:
+                return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                       crawler_names=crawler_names, current_crawler=crawler_names,
+                                       price_stats=None)
+            else:
+                return redirect(url_for("home"))
+    except Exception as e:
+        return render_template("error.html", error=e)
+        # flash("Requested page is only accessible after logging in.")
+        # return redirect(url_for("home"))
 
 
 @app.route('/add', methods=["GET", "POST"])
@@ -167,62 +190,45 @@ def add():
 
 @app.route('/preview', methods=["GET", "POST"])
 def preview():
-    try:
-        # get user's crawlers
-        active_crawlers = []
-        inactive_crawlers = []
-        user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
-        crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == user_id).all()
-        for crawler_id in crawler_ids:
-            crawler = db.session.query(Crawler).filter(Crawler.crawler_id == crawler_id).first()
-            crawler_info = {}
-            crawler_info["name"] = crawler.name
-            crawler_info["category"] = crawler.category
-            crawler_info["subcategory"] = crawler.subcategory
-            crawler_info["url"] = crawler.url
-            crawler_info["active"] = crawler.active
-            # active crawlers
-            if crawler_info["active"]:
-                active_crawlers.append(crawler_info)
-            else:
-                inactive_crawlers.append(crawler_info)
+    # get user's crawlers
+    active_crawlers = []
+    inactive_crawlers = []
+    user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
+    crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == user_id).all()
+    for crawler_id in crawler_ids:
+        crawler = db.session.query(Crawler).filter(Crawler.crawler_id == crawler_id).first()
+        crawler_info = {}
+        crawler_info["name"] = crawler.name
+        crawler_info["category"] = crawler.category
+        crawler_info["subcategory"] = crawler.subcategory
+        crawler_info["url"] = crawler.url
+        crawler_info["active"] = crawler.active
+        # active crawlers
+        if crawler_info["active"]:
+            active_crawlers.append(crawler_info)
+        else:
+            inactive_crawlers.append(crawler_info)
 
-        if request.method == "POST":
-            current_category = request.form["category"]
-            current_subcategory = request.form["subcategory"]
-            current_name = request.form["name"]
-            current_url = request.form["url"]
-            # global categories, subcategories
-            if not current_url:
-                current_url = categories[current_category] + subcategories[current_category][current_subcategory]
-            global preview_content
-            preview_content = scrap(current_url)
-            return render_template("crawlers.html", categories=categories,
-                                   subcategories=subcategories[current_category],
-                                   current_category=current_category,
-                                   name=current_name, url=current_url, database_nav="nav-link",
-                                   crawlers_nav="nav-link active", active_crawlers=active_crawlers,
-                                   inactive_crawlers=inactive_crawlers, preview_content=preview_content,
-                                   current_url=current_url)
+    if request.method == "POST":
+        current_category = request.form["category"]
+        current_subcategory = request.form["subcategory"]
+        current_name = request.form["name"]
+        current_url = request.form["url"]
+        # global categories, subcategories
+        if not current_url:
+            current_url = categories[current_category] + subcategories[current_category][current_subcategory]
+        global preview_content
+        preview_content = scrap(current_url)
+        return render_template("crawlers.html", categories=categories,
+                               subcategories=subcategories[current_category],
+                               current_category=current_category,
+                               name=current_name, url=current_url, database_nav="nav-link",
+                               crawlers_nav="nav-link active", active_crawlers=active_crawlers,
+                               inactive_crawlers=inactive_crawlers, preview_content=preview_content,
+                               current_url=current_url)
 
-        elif request.method == "GET":
-            return redirect(url_for("crawlers"))
-
-    except Exception as e:
-        return render_template("error.html", error=e)
-    # try:
-    #     if request.method == "POST":
-    #         # add preview content
-    #         url = request.form["url"]
-    #         global preview_content
-    #         preview_content = scrap(url)
-    #         return redirect(url_for("crawlers"))
-    #
-    #     elif request.method == "GET":
-    #         return redirect(url_for("crawlers"))
-    #
-    # except Exception as e:
-    #     return render_template("error.html", error=e)
+    elif request.method == "GET":
+        return redirect(url_for("home"))
 
 
 @app.route('/del_crawler', methods=["GET", "POST"])
@@ -280,6 +286,15 @@ def stop_crawler():
         db.session.commit()
         flash("Crawler '{}' stopped successfully!".format(request.form["stop"]))
         return redirect(url_for("crawlers"))
+
+
+@app.route('/del_data', methods=["GET", "POST"])
+def del_data():
+    if request.method == "GET":
+        return redirect(url_for("home"))
+    elif request.method == "POST":
+        delete_data(int(request.form["delete"]))
+        return redirect(url_for("database"))
 
 
 if __name__ == "__main__":
