@@ -1,6 +1,6 @@
 from flask import Flask, request, session, redirect, url_for, render_template, flash
 
-from analytics import price_statistics
+from analytics import price_statistics, graph
 from database import *
 from passlib.hash import sha256_crypt
 from scrapper import *
@@ -18,6 +18,7 @@ def home():
     data = scrap("https://carousell.com/categories/electronics-7/audio-207/")
     for d in data:
         create_data("audio", d["name"], d["price"], d["date"], d["link"])
+
     return render_template("home.html", database_nav="nav-link",
                                    crawlers_nav="nav-link")
 
@@ -135,14 +136,18 @@ def database():
             if current_search:
                 filter_labels.append(current_search)
 
+            # filter data with filter labels
             if crawler_data:
                 suggested_labels = generate_labels(crawler_data)
                 if filter_labels:
-                    # filter data with filter labels
                     crawler_data = filter_results(filter_labels, crawler_data)
-                # get price statistics
+
+            # get price statistics and graph
+            if crawler_data:
                 price_stats = price_statistics(crawler_data)
-                print(crawler_data[0].data_id)
+                graph(crawler_data)
+
+
 
                 return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
                                        crawler_names=crawler_names, current_crawler=current_crawler,

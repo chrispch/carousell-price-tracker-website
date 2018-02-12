@@ -162,6 +162,15 @@ def delete_data(data_id):
     db.session.commit()
 
 
+def delete_all_data():
+    for i in db.session.query(Data).all():
+        db.session.delete(i)
+        db.session.commit()
+    for i in db.session.query(CrawlersToData).all():
+        db.session.delete(i)
+        db.session.commit()
+
+
 db.create_all()
 
 

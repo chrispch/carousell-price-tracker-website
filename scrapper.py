@@ -20,6 +20,10 @@ def scrap(url):
         info = soup.find_all("dl")  # contains price and desc
         time_ago = soup.find_all("time")
         hyperlinks = soup.find_all("a", {"id": "productCardThumbnail"})
+        # remove duplicate hyperlinks
+        for i in range(len(hyperlinks)-1, -1, -1):
+            if i % 2 == 0:
+                hyperlinks.pop(i)
         current_date = date.today()
         # process list of listings from page
         for n, i, t, h in zip(names, info, time_ago, hyperlinks):

@@ -3,7 +3,7 @@
 {%block content%}
 <!-- Filter form -->
 <div class="container" style="padding-top: 10px;">
-	<form action="", method="post", class="border-bottom" style="padding-bottom: 10px;">
+	<form action="", method="post", class="border-bottom" style="padding-bottom: 10px;" id="search_field">
 
 		<!-- Crawler Name -->
 		
@@ -31,27 +31,27 @@
 
 		<!-- Suggested Labels -->
 		{% if suggested_labels != None %}
-			<div class="form-group">
-				<label>Suggested Labels:</label>
-				{% for lb in suggested_labels %} 
-					<div class="form-check form-check-inline" style="padding-left: 10px;">
-					  {% if lb in selected_labels %}
-					  	<input class="form-check-input" type="checkbox" id="{{lb}}" value="{{lb}}" onchange="this.form.submit()" name="suggested_labels" checked> 
-					  {% else %}
-					  	<input class="form-check-input" type="checkbox" id="{{lb}}" value="{{lb}}" onchange="this.form.submit()" name="suggested_labels">	
-					  {% endif %}
-					  <label class="form-check-label" for="{{lb}}">{{lb}}</label>
-					</div>
-				{% endfor %}
+		<div class="form-group">
+			<label>Suggested Labels:</label>
+			{% for lb in suggested_labels %} 
+			<div class="form-check form-check-inline" style="padding-left: 10px;">
+				{% if lb in selected_labels %}
+				<input class="form-check-input" type="checkbox" id="{{lb}}" value="{{lb}}" onchange="this.form.submit()" name="suggested_labels" checked> 
+				{% else %}
+				<input class="form-check-input" type="checkbox" id="{{lb}}" value="{{lb}}" onchange="this.form.submit()" name="suggested_labels">	
+				{% endif %}
+				<label class="form-check-label" for="{{lb}}">{{lb}}</label>
 			</div>
+			{% endfor %}
+		</div>
 		{% else %}
-			<div class="form-group">
-				<label>Suggested Labels</label>
-				<div class="form-check form-check-inline" style="padding-left: 10px;">
-				  <input class="form-check-input" type="checkbox" id="None" value="option1" disabled name="None"> 
-				  <label class="form-check-label" for="None">None</label>
-				</div>
+		<div class="form-group">
+			<label>Suggested Labels</label>
+			<div class="form-check form-check-inline" style="padding-left: 10px;">
+				<input class="form-check-input" type="checkbox" id="None" value="option1" disabled name="None"> 
+				<label class="form-check-label" for="None">None</label>
 			</div>
+		</div>
 		{% endif %}
 
 		<!-- Tolerance Value -->
@@ -61,8 +61,9 @@
 
 	</form>
 	
+
 	<!-- Data Price Stats -->
-	<p class="font-weight-bold" style="font-size: 20px">Statistics</p>
+	<p class="font-weight-bold" style="font-size: 20px; margin-top: 20px;">Statistics</p>
 	<table class="table">
 		<thead>
 			<tr>
@@ -88,14 +89,23 @@
 		</tbody>
 	</table>
 
+	<!-- Graph -->
+	<div class="container">
+		<div class="row">
+			<div class="col w-75">{% include "graph.html" %}</div>
+		</div>
+	</div>
+	
+
+
 	<!-- Returned Data -->
 	<p class="font-weight-bold" style="font-size: 20px">Data</p>
-	<table class="table">
+	<table class="table" id="returned-data">
 		<thead>
 			<tr>
-				<th scope="col">Name</th>
-				<th scope="col">Price</th>
-				<th scope="col">Date</th>
+				<th scope="col" onclick="sortTable(0)">Name</th>
+				<th scope="col" onclick="sortTable(1)">Price</th>
+				<th scope="col" onclick="sortTable(2)">Date</th>
 				<th scope="col"></th>
 			</tr>
 		</thead>
@@ -106,6 +116,7 @@
 				<td class="w-75"><a href="{{data['link']}}" target="_blank">{{data["name"]}}</a></td>
 				<td>{{data["price"]}}</td>
 				<td>{{data["date"]}}</td>
+				<!-- Delete button -->
 				<td><form method="POST"><button class="btn btn-danger" type="submit" formaction="{{ url_for('del_data') }}" value="{{data['data_id']}}" name="delete">X</button></form></td>
 			</tr>
 			{% endfor %}
@@ -114,4 +125,79 @@
 	</table>
 
 </div>
+
+<script>
+	function sortTable(n) {
+		var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+		table = document.getElementById("returned-data");
+		switching = true;
+		  // Set the sorting direction to ascending:
+		  dir = "asc"; 
+		  /* Make a loop that will continue until
+		  no switching has been done: */
+		  while (switching) {
+		    // Start by saying: no switching is done:
+		    switching = false;
+		    rows = table.getElementsByTagName("TR");
+		    /* Loop through all table rows (except the
+		    first, which contains table headers): */
+		    for (i = 1; i < (rows.length - 1); i++) {
+		      // Start by saying there should be no switching:
+		      shouldSwitch = false;
+		      /* Get the two elements you want to compare,
+		      one from current row and one from the next: */
+		      x = rows[i].getElementsByTagName("TD")[n];
+		      y = rows[i + 1].getElementsByTagName("TD")[n];
+		      /* Check if the two rows should switch place,
+		      based on the direction, asc or desc: */
+     	if (n == 1) {
+	      	if (dir == "asc") {
+		      	if (parseInt(x.innerHTML) > parseInt(y.innerHTML)) {
+		          // If so, mark as a switch and break the loop:
+		          shouldSwitch= true;
+		          break;
+		      	}
+		  	} else if (dir == "desc") {
+		  	if (parseInt(x.innerHTML) < parseInt(y.innerHTML)) {
+		          // If so, mark as a switch and break the loop:
+		          shouldSwitch= true;
+		          break;
+		      	}
+		 	}
+		 }
+		 else {
+	      	
+		 	if (dir == "asc") {
+		      	if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+		          // If so, mark as a switch and break the loop:
+		          shouldSwitch= true;
+		          break;
+		      	}
+		  	} else if (dir == "desc") {
+		  	if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+		          // If so, mark as a switch and break the loop:
+		          shouldSwitch= true;
+		          break;
+		      	}
+		 	}
+		 }
+		}
+		if (shouldSwitch) {
+		      /* If a switch has been marked, make the switch
+		      and mark that a switch has been done: */
+		      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+		      switching = true;
+		      // Each time a switch is done, increase this count by 1:
+		      switchcount ++; 
+		  } else {
+		      /* If no switching has been done AND the direction is "asc",
+		      set the direction to "desc" and run the while loop again. */
+		      if (switchcount == 0 && dir == "asc") {
+		      	dir = "desc";
+		      	switching = true;
+		      }
+		  }
+		}
+	}
+</script>
 {%endblock%}
