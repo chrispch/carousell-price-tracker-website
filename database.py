@@ -3,6 +3,7 @@
 # from sqlalchemy.ext.declarative import declarative_base
 from flask_sqlalchemy import SQLAlchemy
 from __init__ import db
+from scrapper import scrap
 
 # global categories, subcategories
 categories = {"Electronics": "https://carousell.com/categories/electronics-7/",
@@ -118,20 +119,30 @@ def create_crawler(user, name, category, subcategory, url, status):
 
 def create_data(crawler, name, price, date, link):
     new_data = Data(name=name, price=price, date=date, link=link)
-    if db.session.query(Data).filter(Data.name == new_data.name).count() == 0 and \
-       db.session.query(Data).filter(Data.date == new_data.date).count() == 0 and \
-       db.session.query(Data).filter(Data.price == new_data.price).count() == 0:
+    # if listing of same name, price and date not already in database, add data to database
+    if db.session.query(Data).filter(Data.name == new_data.name).\
+                              filter(Data.date == new_data.date).\
+                              filter(Data.price == new_data.price).count() == 0:
         db.session.add(new_data)
-        crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
-        print(crawlerid)
-        # data_id of most recently added crawler with new_data.name
-        dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).all()[-1]
+        db.session.commit()
+        dataid = new_data.data_id
+    else:
+        print(new_data.name, new_data.price, new_data.date)
+        dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).\
+                                                        filter(Data.date == new_data.date).\
+                                                        filter(Data.price == new_data.price).first()
+        print(dataid)
+
+    crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
+    # if crawler-data relation does not yet exist, add relation
+    if crawlerid not in db.session.query(CrawlersToData.crawler_id).filter(CrawlersToData.data_id == dataid).all():
         new_relation = CrawlersToData(crawlerid, dataid)
         db.session.add(new_relation)
         db.session.commit()
 
 
 def delete_crawler(crawler_name):
+    print(crawler_name)
     crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler_name).first()
     if crawlerid:  # if crawler exists
         crawler = db.session.query(Crawler).get(crawlerid)
@@ -171,7 +182,17 @@ def delete_all_data():
         db.session.commit()
 
 
+def scrap_into_database():
+    print("Scrapping into database")
+    crawlers = db.session.query(Crawler).all()
+    for c in crawlers:
+        data = scrap(c.url)
+        for d in data:
+            create_data(c.name, d["name"], d["price"], d["date"], d["link"])
+
+
 db.create_all()
+# delete_all_data()
 
 
 # create_user(email="test1@mail.com", password="pw")

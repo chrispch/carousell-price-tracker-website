@@ -1,9 +1,9 @@
 from flask import Flask, request, session, redirect, url_for, render_template, flash
-
 from analytics import price_statistics, graph
 from database import *
 from passlib.hash import sha256_crypt
 from scrapper import *
+from flask_apscheduler import APScheduler
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']='postgresql://postgres:hern3010@localhost/price-tracker'
@@ -13,12 +13,19 @@ db = SQLAlchemy(app)
 preview_content = None
 
 
+class Config(object):
+    JOBS = [
+        {
+            'id': 'scrap_into_database',
+            'func': 'database:scrap_into_database',
+            'trigger': 'interval',
+            'seconds': 60
+        }
+    ]
+
+
 @app.route('/')
 def home():
-    data = scrap("https://carousell.com/categories/electronics-7/audio-207/")
-    for d in data:
-        create_data("audio", d["name"], d["price"], d["date"], d["link"])
-
     return render_template("home.html", database_nav="nav-link",
                                    crawlers_nav="nav-link")
 
@@ -120,51 +127,50 @@ def crawlers():
 @app.route('/database', methods=["GET", "POST"])
 def database():
     try:
-        current_user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
-        crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == current_user_id).all()
-        crawler_names = db.session.query(Crawler.name).filter(Crawler.crawler_id.in_(crawler_ids)).all()
-        selected_labels = request.form.getlist("suggested_labels")
-        if request.method == "POST":
-            # get crawler data
-            current_crawler = request.form["crawler-name"]
-            current_search = request.form["search"]
-            current_crawler_id = db.session.query(Crawler.crawler_id).filter(Crawler.name == current_crawler).first()[0]
-            data_ids = db.session.query(CrawlersToData.data_id).filter(CrawlersToData.crawler_id == current_crawler_id).all()
-            crawler_data = list(db.session.query(Data).filter(Data.data_id.in_(data_ids)).all())
-            filter_labels = selected_labels
-            # combines selected labels and search terms for filtering
-            if current_search:
-                filter_labels.append(current_search)
-
-            # filter data with filter labels
-            if crawler_data:
+        if session["logged_in"]:
+            current_user_id = db.session.query(User.user_id).filter(User.email == session["user_email"]).first()
+            crawler_ids = db.session.query(UsersToCrawlers.crawler_id).filter(UsersToCrawlers.user_id == current_user_id).all()
+            crawler_names = db.session.query(Crawler.name).filter(Crawler.crawler_id.in_(crawler_ids)).all()
+            selected_labels = request.form.getlist("suggested_labels")
+            print(selected_labels)
+            if request.method == "POST":
+                # get crawler data
+                current_crawler = request.form["crawler-name"]
+                current_search = request.form["search"]
+                current_crawler_id = db.session.query(Crawler.crawler_id).filter(Crawler.name == current_crawler).first()[0]
+                data_ids = db.session.query(CrawlersToData.data_id).filter(CrawlersToData.crawler_id == current_crawler_id).all()
+                crawler_data = list(db.session.query(Data).filter(Data.data_id.in_(data_ids)).all())
                 suggested_labels = generate_labels(crawler_data)
-                if filter_labels:
-                    crawler_data = filter_results(filter_labels, crawler_data)
+                filter_labels = selected_labels
+                # combines selected labels and search terms for filtering
+                if current_search:
+                    filter_labels.append(current_search)
 
-            # get price statistics and graph
-            if crawler_data:
-                price_stats = price_statistics(crawler_data)
-                graph(crawler_data)
+                # filter crawler data
+                if crawler_data:
+                    if filter_labels:
+                        crawler_data = filter_results(filter_labels, crawler_data)
 
+                # get price statistics and graph
+                if crawler_data:
+                    price_stats = price_statistics(crawler_data)
+                    graph(crawler_data)
 
-
-                return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
-                                       crawler_names=crawler_names, current_crawler=current_crawler,
-                                       current_search=current_search, crawler_data=crawler_data,
-                                       suggested_labels=suggested_labels, selected_labels=selected_labels,
-                                       price_stats=price_stats)
-            else:
-                return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
-                                       crawler_names=crawler_names, current_crawler=current_crawler,
-                                       current_search=current_search, crawler_data=None, suggested_labels=None,
-                                       selected_labels=selected_labels, price_stats=None)
-        elif request.method == "GET":
-            if session["logged_in"]:
-                return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
-                                       crawler_names=crawler_names, current_crawler=crawler_names,
-                                       price_stats=None)
-            else:
+                    return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                           crawler_names=crawler_names, current_crawler=current_crawler,
+                                           current_search=current_search, crawler_data=crawler_data,
+                                           suggested_labels=suggested_labels, selected_labels=selected_labels,
+                                           price_stats=price_stats)
+                else:
+                    return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                           crawler_names=crawler_names, current_crawler=current_crawler,
+                                           current_search=current_search, crawler_data=None, suggested_labels=None,
+                                           selected_labels=selected_labels, price_stats=None)
+            elif request.method == "GET":
+                    return render_template("database.html", database_nav="nav-link active", crawlers_nav="nav-link",
+                                           crawler_names=crawler_names, current_crawler=crawler_names,
+                                           price_stats=None)
+        else:
                 return redirect(url_for("home"))
     except Exception as e:
         return render_template("error.html", error=e)
@@ -179,7 +185,7 @@ def add():
     elif request.method == "POST":
         current_name = request.form["name"]
         current_url = request.form["url"]
-        if current_url:
+        if current_url is not "":
             current_category = "-"
             current_subcategory = "-"
         else:
@@ -304,6 +310,10 @@ def del_data():
 
 if __name__ == "__main__":
     app.debug = True
+    # schedule scrapper
+    app.config.from_object(Config())
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+    scheduler.start()
     app.run()
-    # todo: add scheduler here
 

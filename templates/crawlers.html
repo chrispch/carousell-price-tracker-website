@@ -112,12 +112,12 @@
 					<!-- Category -->
 					<div class="form-group col-md-3">
 						<label for="category" class="font-weight-bold">Category</label>
-						<input type="text" id="category" placeholder="-" value="{{crawler['category']}}" name="category" readonly class="form-control-plaintext">
+						<input type="text" id="category" value="{{crawler['category']}}" name="category" readonly class="form-control-plaintext">
 					</div>
 					<!-- Subcategory -->
 					<div class="form-group col-md-3">
 						<label for="subcategory" class="font-weight-bold">Subcategory</label>
-						<input type="text" id="subcategory" placeholder="-" value="{{crawler['subcategory']}}" name="subcategory" readonly class="form-control-plaintext">
+						<input type="text" id="subcategory" value="{{crawler['subcategory']}}" name="subcategory" readonly class="form-control-plaintext">
 					</div>
 				</div>
 				
@@ -137,9 +137,9 @@
 						<button class="btn btn-primary" type="submit" formaction="{{ url_for('info_crawler') }}">Get Info</button>
 						<button class="btn btn-primary" type="submit" formaction="{{ url_for('rename_crawler') }}" value="{{crawler['name']}}" name="rename">Rename</button>
 						<button class="btn btn-danger" type="submit" formaction="{{ url_for('stop_crawler') }}" value="{{crawler['name']}}" name="stop">Stop</button>
-						<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_modal">Delete</button>
+						<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#{{crawler['name']}}">Delete</button>
 						<!-- Crawler delete modal -->
-						<div class="modal fade" id="delete_modal" tabindex="-1" role="dialog" aria-labelledby="delete_modal" aria-hidden="true">
+						<div class="modal fade" id="{{crawler['name']}}" tabindex="-1" role="dialog" aria-labelledby="delete_modal" aria-hidden="true">
 						  <div class="modal-dialog" role="document">
 						    <div class="modal-content">
 						      <div class="modal-header">
@@ -173,12 +173,12 @@
 					<!-- Category -->
 					<div class="form-group col-md-3">
 						<label for="category" class="font-weight-bold">Category</label>
-						<input type="text" id="category" placeholder="-" value="{{crawler['category']}}" name="category" readonly class="form-control-plaintext">
+						<input type="text" id="category" value="{{crawler['category']}}" name="category" readonly class="form-control-plaintext">
 					</div>
 					<!-- Subcategory -->
 					<div class="form-group col-md-3">
 						<label for="subcategory" class="font-weight-bold">Subcategory</label>
-						<input type="text" id="subcategory" placeholder="-" value="{{crawler['subcategory']}}" name="subcategory" readonly class="form-control-plaintext">
+						<input type="text" id="subcategory" value="{{crawler['subcategory']}}" name="subcategory" readonly class="form-control-plaintext">
 					</div>
 				</div>
 				
