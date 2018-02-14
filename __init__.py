@@ -97,27 +97,28 @@ def crawlers():
                 else:
                     inactive_crawlers.append(crawler_info)
 
-        if request.method == "POST":
-            current_category = request.form["category"]
-            current_name = request.form["name"]
-            current_url = request.form["url"]
-            global preview_content
-            preview_content = None
-            return render_template("crawlers.html", categories=categories,
-                                   subcategories=subcategories[current_category],
-                                   current_category=current_category,
-                                   name=current_name, url=current_url, database_nav="nav-link",
-                                   crawlers_nav="nav-link active", active_crawlers=active_crawlers,
-                                   inactive_crawlers=inactive_crawlers, preview_content=preview_content)
-
-        elif request.method == "GET":
-                # on first loading crawlers.html
+            if request.method == "POST":
+                current_category = request.form["category"]
+                current_name = request.form["name"]
+                # current_url = request.form["url"]
                 global preview_content
                 preview_content = None
-                return render_template("crawlers.html", categories=categories, subcategories=subcategories["Electronics"],
-                                       current_category="Electronics", name="", url="", database_nav="nav-link",
+                return render_template("crawlers.html", categories=categories,
+                                       subcategories=subcategories[current_category],
+                                       current_category=current_category,
+                                       name=current_name, database_nav="nav-link",
                                        crawlers_nav="nav-link active", active_crawlers=active_crawlers,
                                        inactive_crawlers=inactive_crawlers, preview_content=preview_content)
+
+            elif request.method == "GET":
+                    # on first loading crawlers.html
+                    global preview_content
+                    preview_content = None
+                    return render_template("crawlers.html", categories=categories, subcategories=subcategories["Electronics"],
+                                           current_category="Electronics", name="", url="", database_nav="nav-link",
+                                           crawlers_nav="nav-link active", active_crawlers=active_crawlers,
+                                           inactive_crawlers=inactive_crawlers, preview_content=preview_content)
+
 
     except:
         flash("Requested page is only accessible after logging in.")
@@ -184,16 +185,18 @@ def add():
         return redirect(url_for("home"))
     elif request.method == "POST":
         current_name = request.form["name"]
-        current_url = request.form["url"]
-        if current_url is not "":
-            current_category = "-"
-            current_subcategory = "-"
-        else:
-            current_category = request.form["category"]
-            current_subcategory = request.form["subcategory"]
+        # current_url = request.form["url"]
+        # if current_url is not "":
+        #     current_category = "-"
+        #     current_subcategory = "-"
+        # else:
+        current_url = ""
+        current_category = request.form["category"]
+        current_subcategory = request.form["subcategory"]
         current_user = session["user_email"]
         if create_crawler(current_user, current_name, current_category, current_subcategory, current_url, True):
             flash("Crawler '{}' added successfully!".format(current_name))
+            scrap_into_database()
         else:
             flash("Crawler name is already in use. Please try again.")
         return redirect(url_for("crawlers"))
@@ -224,10 +227,11 @@ def preview():
         current_category = request.form["category"]
         current_subcategory = request.form["subcategory"]
         current_name = request.form["name"]
-        current_url = request.form["url"]
+        # current_url = request.form["url"]
         # global categories, subcategories
-        if not current_url:
-            current_url = categories[current_category] + subcategories[current_category][current_subcategory]
+        # if not current_url:
+        #     current_url = categories[current_category] + subcategories[current_category][current_subcategory]
+        current_url = categories[current_category] + subcategories[current_category][current_subcategory] + "?sort_by=time_created%2Cdescending"
         global preview_content
         preview_content = scrap(current_url)
         return render_template("crawlers.html", categories=categories,

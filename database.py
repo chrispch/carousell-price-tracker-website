@@ -97,7 +97,7 @@ def create_crawler(user, name, category, subcategory, url, status):
     if url:
         effective_url = url
     else:
-        effective_url = categories[category] + subcategories[category][subcategory]
+        effective_url = categories[category] + subcategories[category][subcategory] + "?sort_by=time_created%2Cdescending"
     # create and add crawler
     new_crawler = Crawler(name, category, subcategory, effective_url, status)
     if db.session.query(Crawler).filter(Crawler.name == new_crawler.name).count() == 0:
@@ -127,11 +127,11 @@ def create_data(crawler, name, price, date, link):
         db.session.commit()
         dataid = new_data.data_id
     else:
-        print(new_data.name, new_data.price, new_data.date)
+        # print(new_data.name, new_data.price, new_data.date)
         dataid = db.session.query(Data.data_id).filter(Data.name == new_data.name).\
                                                         filter(Data.date == new_data.date).\
                                                         filter(Data.price == new_data.price).first()
-        print(dataid)
+        # print(dataid)
 
     crawlerid = db.session.query(Crawler.crawler_id).filter(Crawler.name == crawler).first()
     # if crawler-data relation does not yet exist, add relation

@@ -1,33 +1,26 @@
 {%block content%}
 	{% if preview_content != None %}
-	<table class="table">
+	<table class="table" id="returned-data">
 		<thead>
 			<tr>
-				<th scope="col">Name</th>
-				<th scope="col">Price</th>
-				<th scope="col">Date</th>
+				<th scope="col" onclick="sortTable(0)">Name</th>
+				<th scope="col" onclick="sortTable(1)">Price</th>
+				<th scope="col" onclick="sortTable(2)">Date</th>
+				<th scope="col"></th>
 			</tr>
 		</thead>
 		<tbody>
 			{% for data in preview_content %}
 			<tr>
-				<td>{{data["name"]}}</td>
+				<td class="w-75"><a href="{{data['link']}}" target="_blank">{{data["name"]}}</a></td>
 				<td>{{data["price"]}}</td>
 				<td>{{data["date"]}}</td>
 			</tr>
 			{% endfor %}
 		</tbody>
 	</table>
-	{% else %}
-	<table class="table">
-		<thead>
-			<tr>
-				<th scope="col">Name</th>
-				<th scope="col">Price</th>
-				<th scope="col">Date</th>
-			</tr>
-		</thead>
-	</table>
-	<p class="text-center">- Preview content-</p>
+	
+	<p class="text-center">- Preview content -</p> 
+	<script src="{{ url_for("static", filename="js/sort.js") }}"></script>
 	{% endif %}
 {%endblock%}

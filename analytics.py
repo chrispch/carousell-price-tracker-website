@@ -2,6 +2,7 @@ from bokeh.plotting import figure, output_file, show
 from datetime import datetime as dt
 import math
 
+
 def price_statistics(data):
     price_stat = {}
     total_price = 0
@@ -19,6 +20,7 @@ def price_statistics(data):
 def graph(data):
     # print("graphing")
     # generate price and date lists
+    # print("hi")
     prices = []
     dates = []
     i = -1
@@ -54,6 +56,7 @@ def graph(data):
                         else:
                             x = math.ceil(x/2)
                             u = u - x
+                            u = max([u, 0])
                             # print("we're going down: " + str(u))
                     elif date == dates[u]:
                         prices[u][0] = prices[u][0] + price  # increase total price of all items on date u
@@ -76,9 +79,10 @@ def graph(data):
                         else:
                             x = math.ceil(x/2)
                             u = u + x
-                            u = max([u, i])
+                            u = min([u, i])
                             # print("we're going up!: " + str(u))
-            # # print(dates)
+                            # print("max", i)
+            # print(dates)
 
         # find average price
         for i in range(len(prices)):

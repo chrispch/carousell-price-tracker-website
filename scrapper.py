@@ -98,7 +98,8 @@ def generate_labels(data):
         # print(word_frequency[top_word])
         if word_frequency[top_word] > 1:
             new_label = top_word.lower()
-            labels.append(new_label)
+            if new_label not in labels:
+                labels.append(new_label)
             word_frequency.pop(top_word)
     if labels:
         return labels
